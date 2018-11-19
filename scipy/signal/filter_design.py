@@ -18,6 +18,8 @@ from numpy.polynomial.polynomial import polyval as npp_polyval
 from scipy import special, optimize, fftpack
 from scipy.special import comb, factorial
 from scipy._lib._numpy_compat import polyvalfromroots
+from .signaltools import lfilter
+from .waveforms import unit_impulse
 
 
 __all__ = ['findfreqs', 'freqs', 'freqz', 'tf2zpk', 'zpk2tf', 'normalize',
@@ -28,7 +30,7 @@ __all__ = ['findfreqs', 'freqs', 'freqz', 'tf2zpk', 'zpk2tf', 'normalize',
            'BadCoefficients', 'freqs_zpk', 'freqz_zpk',
            'tf2sos', 'sos2tf', 'zpk2sos', 'sos2zpk', 'group_delay',
            'sosfreqz', 'iirnotch', 'iirpeak', 'bilinear_zpk',
-           'lp2lp_zpk', 'lp2hp_zpk', 'lp2bp_zpk', 'lp2bs_zpk']
+           'lp2lp_zpk', 'lp2hp_zpk', 'lp2bp_zpk', 'lp2bs_zpk', 'impz']
 
 
 class BadCoefficients(UserWarning):
@@ -581,6 +583,64 @@ def freqz_zpk(z, p, k, worN=512, whole=False, fs=2*pi):
     w = w*fs/(2*pi)
 
     return w, h
+
+
+def impz(b, a=1, N=None, fs=1):
+    """
+    Compute the impulse response of a digital filter by filtering a dirac
+    impulse.
+
+    Parameters
+    ----------
+    b : array_like
+        The numerator coefficient vector in a 1-D sequence.
+    a : array_like
+        The denominator coefficient vector in a 1-D sequence.  If ``a[0]``
+        is not 1, then both `a` and `b` are normalized by ``a[0]``.
+    N : int, optional
+        Number of coefficient to return. For FIR filters, default is ``len(b)``,
+        for IIR filters, default is 128.
+    fs : int, optional
+        Sampling frequency. Default is 1.
+
+        .. versionadded:: 1.1.1
+
+    Returns
+    -------
+    t : ndarray
+        The temporal position at which coefficients are situated, in seconds.
+    h : ndarray
+        The impulse response coefficients.
+
+    See Also
+    --------
+    freqz
+
+    Examples
+    --------
+    >>> from scipy import signal
+    >>> b = [1, 0, 0, 0.5**3]
+    >>> a = [1, 0, 0, 0, 0, 0.9**5]
+    >>> t, h = signal.impz(b, a, fs=16000)
+
+    >>> import matplotlib.pyplot as plt
+    >>> plt.title('Digital filter impulse response')
+    >>> plt.stem(t, h)
+    >>> plt.ylabel('Amplitude')
+    >>> plt.xlabel('Time [seconds]')
+    >>> plt.show()
+
+    """
+    b = atleast_1d(b)
+    a = atleast_1d(a)
+
+    if N is None:
+        if len(a) == 1:
+            N = len(b)
+        else:
+            N = 128
+
+    return numpy.linspace(0, N / fs, N), lfilter(b, a, unit_impulse(N))
 
 
 def group_delay(system, w=512, whole=False, fs=2*pi):

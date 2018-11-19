@@ -1072,6 +1072,33 @@ class TestFreqz_zpk(object):
             assert_array_almost_equal(h, [1])
 
 
+class TestImpz(object):
+    def test_fir(self):
+        b = [1, 0, 0, 0.5**3]
+        t, h = impz(b)
+        assert_array_almost_equal(b, h)
+        assert_equal(len(h), len(t))
+        assert_equal(len(h), len(b))
+        assert_equal(t[-1], len(b))
+
+    def test_iir(self):
+        b = [1, 0, 0, 0.5**3]
+        a = [1, 0, 0, 0, 0, 0.9**5]
+        t, h = impz(b, a)
+        assert_equal(len(h), len(t))
+        assert_equal(len(h), 128)
+        assert_equal(t[-1], len(b))
+
+    def test_fs_param(self):
+        fs = 900
+        b = [1, 0, 0, 0.5**3]
+        a = [1, 0, 0, 0, 0, 0.9**5]
+        t, h = impz(b, a, fs=900)
+        assert_equal(len(h), len(t))
+        assert_equal(len(h), 128)
+        assert_equal(t[-1], len(b) / fs)
+
+
 class TestNormalize(object):
 
     def test_allclose(self):
